@@ -1,6 +1,26 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 
+/* ===== AI PRIORITY LOGIC ===== */
+const getPriority = (description = "") => {
+  const text = description.toLowerCase();
+
+  if (
+    text.includes("urgent") ||
+    text.includes("asap") ||
+    text.includes("deadline") ||
+    text.includes("immediately")
+  ) {
+    return "High";
+  }
+
+  if (text.includes("soon") || text.includes("important")) {
+    return "Medium";
+  }
+
+  return "Low";
+};
+
 function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
@@ -12,17 +32,18 @@ function TaskList() {
   const [editDescription, setEditDescription] = useState("");
   const [editAssignedTo, setEditAssignedTo] = useState("");
 
-  // Delete modal state
+  // Delete modal
   const [deleteTaskId, setDeleteTaskId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
+  /* ===== LOAD TASKS ===== */
   useEffect(() => {
     const storedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
     setTasks(storedTasks);
   }, []);
 
-  // Update status
+  /* ===== UPDATE STATUS ===== */
   const updateStatus = (id, newStatus) => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, status: newStatus } : task
@@ -31,7 +52,7 @@ function TaskList() {
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
   };
 
-  // Open edit modal
+  /* ===== EDIT FLOW ===== */
   const openEditModal = (task) => {
     setEditTask(task);
     setEditTitle(task.title);
@@ -39,7 +60,6 @@ function TaskList() {
     setEditAssignedTo(task.assignedTo);
   };
 
-  // Save edit
   const saveEditTask = () => {
     const updatedTasks = tasks.map((t) =>
       t.id === editTask.id
@@ -57,7 +77,7 @@ function TaskList() {
     setEditTask(null);
   };
 
-  // Delete flow
+  /* ===== DELETE FLOW ===== */
   const confirmDelete = () => {
     const updatedTasks = tasks.filter(
       (task) => task.id !== deleteTaskId
@@ -67,7 +87,7 @@ function TaskList() {
     setDeleteTaskId(null);
   };
 
-  // Search + Filter + Role logic
+  /* ===== SEARCH + FILTER + ROLE ===== */
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.title
       .toLowerCase()
@@ -83,11 +103,20 @@ function TaskList() {
     return matchesSearch && matchesStatus && roleCheck;
   });
 
+  /* ===== PRIORITY SORTING ===== */
+  const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const pa = getPriority(a.description);
+    const pb = getPriority(b.description);
+    return priorityOrder[pa] - priorityOrder[pb];
+  });
+
   return (
     <Layout>
       <h2 style={{ marginBottom: "16px" }}>Tasks</h2>
 
-      {/* Search + Filter */}
+      {/* SEARCH + FILTER */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
         <input
           type="text"
@@ -106,52 +135,82 @@ function TaskList() {
         </select>
       </div>
 
-      {/* Task List */}
-      {filteredTasks.length === 0 ? (
+      {/* TASK LIST */}
+      {sortedTasks.length === 0 ? (
         <p>No tasks found</p>
       ) : (
-        filteredTasks.map((task) => (
-          <div key={task.id} className="task-row">
-            <div>
-              <h4>{task.title}</h4>
-              <small>{task.description}</small>
+        sortedTasks.map((task) => {
+          const priority = getPriority(task.description);
+
+          return (
+            <div key={task.id} className="task-row">
+              <div>
+                <h4>{task.title}</h4>
+                <small>{task.description}</small>
+
+                {/* 🤖 AI SUMMARY */}
+                {task.summary && (
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "#374151",
+                      marginTop: "6px",
+                    }}
+                  >
+                    🤖 <b>AI Summary:</b> {task.summary}
+                  </p>
+                )}
+
+                {/* AI PRIORITY BADGE */}
+                <div style={{ marginTop: "6px" }}>
+                  <span className={`priority ${priority.toLowerCase()}`}>
+                    {priority} Priority
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                }}
+              >
+                <span className={`status ${task.status.toLowerCase()}`}>
+                  {task.status}
+                </span>
+
+                {user.role === "manager" && (
+                  <>
+                    <select
+                      value={task.status}
+                      onChange={(e) =>
+                        updateStatus(task.id, e.target.value)
+                      }
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+
+                    <button
+                      className="task-btn edit"
+                      onClick={() => openEditModal(task)}
+                    >
+                      ✏️
+                    </button>
+
+                    <button
+                      className="task-btn delete"
+                      onClick={() => setDeleteTaskId(task.id)}
+                    >
+                      🗑️
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span className={`status ${task.status.toLowerCase()}`}>
-                {task.status}
-              </span>
-
-              {user.role === "manager" && (
-                <>
-                  <select
-                    value={task.status}
-                    onChange={(e) =>
-                      updateStatus(task.id, e.target.value)
-                    }
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-
-                  <button
-                    className="task-btn edit"
-                    onClick={() => openEditModal(task)}
-                  >
-                    ✏️
-                  </button>
-
-                  <button
-                    className="task-btn delete"
-                    onClick={() => setDeleteTaskId(task.id)}
-                  >
-                    🗑️
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ))
+          );
+        })
       )}
 
       {/* EDIT MODAL */}
