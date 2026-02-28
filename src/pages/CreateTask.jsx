@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api"; // ✅ axios instance
 
 /* ===== EMPLOYEE DATA (AI USES THIS) ===== */
 const employees = [
@@ -19,7 +20,7 @@ function CreateTask() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
-  /* ===== AI SMART SUGGESTION + QUALITY CHECK ===== */
+  /* ===== AI SMART SUGGESTION ===== */
   const getAISuggestion = (text) => {
     const value = text.toLowerCase();
 
@@ -43,73 +44,96 @@ function CreateTask() {
     return "";
   };
 
-  /* ===== AI TASK SUMMARY (BACKEND OPENAI) ===== */
-  const generateSummary = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/ai/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
-      });
-      const data = await res.json();
-      setSummary(data.summary);
-    } catch {
-      alert("AI summary failed");
-    }
-  };
-
-  /* ===== AI SMART AUTO ASSIGN ===== */
-  const smartAutoAssign = () => {
-    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    const workload = {};
-
-    employees.forEach((e) => (workload[e.email] = 0));
-
-    tasks.forEach((task) => {
-      if (
-        task.description?.toLowerCase().includes("urgent") ||
-        task.description?.toLowerCase().includes("asap")
-      ) {
-        workload[task.assignedTo] =
-          (workload[task.assignedTo] || 0) + 1;
-      }
+/* ===== AI TASK SUMMARY (FINAL SAFE VERSION) ===== */
+const generateSummary = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/ai/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description }),
     });
 
-    let bestEmployee = null;
-    let bestScore = -Infinity;
+    // 🔴 IMPORTANT: status check FIRST
+    if (!res.ok) {
+      console.error("HTTP Error:", res.status);
+      alert("AI summary failed (API error)");
+      return;
+    }
 
-    employees.forEach((emp) => {
-      let score = 0;
+    const data = await res.json();
+    console.log("AI summary response:", data);
 
-      // 1️⃣ Less workload
-      score -= workload[emp.email] * 2;
+    if (!data.summary) {
+      alert("AI summary empty");
+      return;
+    }
 
-      // 2️⃣ Skill match
-      emp.skills.forEach((skill) => {
-        if (description.toLowerCase().includes(skill)) {
-          score += 3;
+    // ✅ Use this in UI
+    setDescription(data.summary); // OR setSummary if you show it separately
+  } catch (err) {
+    console.error("Frontend error:", err);
+    alert("AI summary failed (frontend)");
+  }
+};
+
+  /* ===== AI SMART AUTO ASSIGN ===== */
+  const smartAutoAssign = async () => {
+    try {
+      // workload backend se nikal rahe hain
+      const res = await api.get("/tasks");
+      const tasks = res.data;
+
+      const workload = {};
+      employees.forEach((e) => (workload[e.email] = 0));
+
+      tasks.forEach((task) => {
+        if (
+          task.description?.toLowerCase().includes("urgent") ||
+          task.description?.toLowerCase().includes("asap")
+        ) {
+          workload[task.assignedTo] =
+            (workload[task.assignedTo] || 0) + 1;
         }
       });
 
-      // 3️⃣ Priority handling
-      if (
-        description.toLowerCase().includes("urgent") ||
-        description.toLowerCase().includes("asap")
-      ) {
-        score += 2;
-      }
+      let bestEmployee = null;
+      let bestScore = -Infinity;
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestEmployee = emp.email;
-      }
-    });
+      employees.forEach((emp) => {
+        let score = 0;
 
-    setAssignedTo(bestEmployee);
+        // 1️⃣ Less workload
+        score -= workload[emp.email] * 2;
+
+        // 2️⃣ Skill match
+        emp.skills.forEach((skill) => {
+          if (description.toLowerCase().includes(skill)) {
+            score += 3;
+          }
+        });
+
+        // 3️⃣ Urgency handling
+        if (
+          description.toLowerCase().includes("urgent") ||
+          description.toLowerCase().includes("asap")
+        ) {
+          score += 2;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestEmployee = emp.email;
+        }
+      });
+
+      setAssignedTo(bestEmployee);
+    } catch (error) {
+      console.error("Auto assign failed", error);
+    }
   };
 
-  /* ===== CREATE TASK ===== */
-  const handleSubmit = (e) => {
+  /* ===== CREATE TASK (BACKEND POST) ===== */
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title || !assignedTo) {
@@ -117,25 +141,21 @@ function CreateTask() {
       return;
     }
 
-    const newTask = {
-      id: Date.now(),
-      title,
-      description,
-      summary,
-      assignedTo,
-      status: "Pending",
-      createdBy: user.email,
-    };
+    try {
+      await api.post("/tasks", {
+        title,
+        description,
+        summary,
+        assignedTo,
+        status: "Pending",
+        createdBy: user.email,
+      });
 
-    const existingTasks =
-      JSON.parse(localStorage.getItem("tasks")) || [];
-
-    localStorage.setItem(
-      "tasks",
-      JSON.stringify([...existingTasks, newTask])
-    );
-
-    navigate("/tasks");
+      navigate("/tasks");
+    } catch (error) {
+      console.error("Task creation failed", error);
+      alert("Failed to create task");
+    }
   };
 
   return (

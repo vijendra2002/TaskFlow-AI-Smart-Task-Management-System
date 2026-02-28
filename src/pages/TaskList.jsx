@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
+import api from "../services/api"; // ✅ axios instance
 
 /* ===== AI PRIORITY LOGIC ===== */
 const getPriority = (description = "") => {
@@ -37,19 +38,28 @@ function TaskList() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  /* ===== LOAD TASKS ===== */
+  /* ===== LOAD TASKS (FROM BACKEND) ===== */
   useEffect(() => {
-    const storedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    setTasks(storedTasks);
+    fetchTasks();
   }, []);
 
-  /* ===== UPDATE STATUS ===== */
-  const updateStatus = (id, newStatus) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === id ? { ...task, status: newStatus } : task
-    );
-    setTasks(updatedTasks);
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+  const fetchTasks = async () => {
+    try {
+      const res = await api.get("/tasks");
+      setTasks(res.data);
+    } catch (error) {
+      console.error("Error fetching tasks", error);
+    }
+  };
+
+  /* ===== UPDATE STATUS (BACKEND) ===== */
+  const updateStatus = async (id, newStatus) => {
+    try {
+      await api.put(`/tasks/${id}`, { status: newStatus });
+      fetchTasks();
+    } catch (error) {
+      console.error("Status update failed", error);
+    }
   };
 
   /* ===== EDIT FLOW ===== */
@@ -57,34 +67,32 @@ function TaskList() {
     setEditTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description);
-    setEditAssignedTo(task.assignedTo);
+    setEditAssignedTo(task.assignedTo || "");
   };
 
-  const saveEditTask = () => {
-    const updatedTasks = tasks.map((t) =>
-      t.id === editTask.id
-        ? {
-            ...t,
-            title: editTitle,
-            description: editDescription,
-            assignedTo: editAssignedTo,
-          }
-        : t
-    );
-
-    setTasks(updatedTasks);
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    setEditTask(null);
+  const saveEditTask = async () => {
+    try {
+      await api.put(`/tasks/${editTask._id}`, {
+        title: editTitle,
+        description: editDescription,
+        assignedTo: editAssignedTo,
+      });
+      setEditTask(null);
+      fetchTasks();
+    } catch (error) {
+      console.error("Edit failed", error);
+    }
   };
 
   /* ===== DELETE FLOW ===== */
-  const confirmDelete = () => {
-    const updatedTasks = tasks.filter(
-      (task) => task.id !== deleteTaskId
-    );
-    setTasks(updatedTasks);
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    setDeleteTaskId(null);
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/tasks/${deleteTaskId}`);
+      setDeleteTaskId(null);
+      fetchTasks();
+    } catch (error) {
+      console.error("Delete failed", error);
+    }
   };
 
   /* ===== SEARCH + FILTER + ROLE ===== */
@@ -143,25 +151,17 @@ function TaskList() {
           const priority = getPriority(task.description);
 
           return (
-            <div key={task.id} className="task-row">
+            <div key={task._id} className="task-row">
               <div>
                 <h4>{task.title}</h4>
                 <small>{task.description}</small>
 
-                {/* 🤖 AI SUMMARY */}
                 {task.summary && (
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "#374151",
-                      marginTop: "6px",
-                    }}
-                  >
+                  <p style={{ fontSize: "13px", marginTop: "6px" }}>
                     🤖 <b>AI Summary:</b> {task.summary}
                   </p>
                 )}
 
-                {/* AI PRIORITY BADGE */}
                 <div style={{ marginTop: "6px" }}>
                   <span className={`priority ${priority.toLowerCase()}`}>
                     {priority} Priority
@@ -169,42 +169,25 @@ function TaskList() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  alignItems: "center",
-                }}
-              >
-                <span className={`status ${task.status.toLowerCase()}`}>
-                  {task.status}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <span className={`status ${task.status?.toLowerCase()}`}>
+                  {task.status || "Pending"}
                 </span>
 
                 {user.role === "manager" && (
                   <>
                     <select
-                      value={task.status}
+                      value={task.status || "Pending"}
                       onChange={(e) =>
-                        updateStatus(task.id, e.target.value)
+                        updateStatus(task._id, e.target.value)
                       }
                     >
                       <option value="Pending">Pending</option>
                       <option value="Completed">Completed</option>
                     </select>
 
-                    <button
-                      className="task-btn edit"
-                      onClick={() => openEditModal(task)}
-                    >
-                      ✏️
-                    </button>
-
-                    <button
-                      className="task-btn delete"
-                      onClick={() => setDeleteTaskId(task.id)}
-                    >
-                      🗑️
-                    </button>
+                    <button onClick={() => openEditModal(task)}>✏️</button>
+                    <button onClick={() => setDeleteTaskId(task._id)}>🗑️</button>
                   </>
                 )}
               </div>
@@ -222,30 +205,22 @@ function TaskList() {
             <input
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="Task title"
             />
 
             <textarea
               rows="3"
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="Description"
             />
 
             <input
               value={editAssignedTo}
               onChange={(e) => setEditAssignedTo(e.target.value)}
-              placeholder="Assigned to email"
             />
 
             <div className="modal-actions">
               <button onClick={saveEditTask}>Save</button>
-              <button
-                className="cancel"
-                onClick={() => setEditTask(null)}
-              >
-                Cancel
-              </button>
+              <button onClick={() => setEditTask(null)}>Cancel</button>
             </div>
           </div>
         </div>
@@ -256,18 +231,11 @@ function TaskList() {
         <div className="modal-overlay">
           <div className="modal">
             <h3>Delete Task</h3>
-            <p>Are you sure you want to delete this task?</p>
+            <p>Are you sure?</p>
 
             <div className="modal-actions">
-              <button className="danger" onClick={confirmDelete}>
-                Delete
-              </button>
-              <button
-                className="cancel"
-                onClick={() => setDeleteTaskId(null)}
-              >
-                Cancel
-              </button>
+              <button onClick={confirmDelete}>Delete</button>
+              <button onClick={() => setDeleteTaskId(null)}>Cancel</button>
             </div>
           </div>
         </div>

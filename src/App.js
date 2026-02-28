@@ -11,9 +11,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
+        {/* Manager routes */}
         <Route
           path="/manager"
           element={
@@ -24,16 +26,6 @@ function App() {
         />
 
         <Route
-          path="/employee"
-          element={
-            <ProtectedRoute role="employee">
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* DAY 3 ROUTES */}
-        <Route
           path="/create-task"
           element={
             <ProtectedRoute role="manager">
@@ -42,6 +34,17 @@ function App() {
           }
         />
 
+        {/* Employee routes */}
+        <Route
+          path="/employee"
+          element={
+            <ProtectedRoute role="employee">
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Common protected route */}
         <Route
           path="/tasks"
           element={
@@ -50,8 +53,12 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Login />} />
       </Routes>
     </BrowserRouter>
   );
 }
+
 export default App;
