@@ -42,3 +42,122 @@ button {
 button:hover {
   background-color: #1e4fd7;
 }
+
+/* Base */
+body {
+  margin: 0;
+  font-family: "Inter", Arial, sans-serif;
+  background: #f4f6f8;
+  color: #111;
+}
+
+/* Page center */
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 48px;
+}
+
+/* Card */
+.card {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  padding: 24px;
+}
+
+/* Header */
+.card-header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.card-header p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Field */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Inputs */
+.field input,
+.field textarea {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+}
+
+/* Textarea */
+.field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* Button row */
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.btn.secondary:hover {
+  background: #e0e7ff;
+}
+
+.btn.primary {
+  background: #4f46e5;
+  color: #fff;
+  font-size: 15px;
+}
+
+.btn.primary:hover {
+  background: #4338ca;
+}

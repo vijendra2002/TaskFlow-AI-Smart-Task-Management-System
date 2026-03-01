@@ -1,241 +1,161 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import api from "../services/api"; // ✅ axios instance
 
-/* ===== AI PRIORITY LOGIC ===== */
-const getPriority = (description = "") => {
+/* ===== AI PRIORITY ===== */
+const getPriority = (description) => {
   const text = description.toLowerCase();
-
-  if (
-    text.includes("urgent") ||
-    text.includes("asap") ||
-    text.includes("deadline") ||
-    text.includes("immediately")
-  ) {
+  if (text.includes("urgent") || text.includes("asap") || text.includes("deadline"))
     return "High";
-  }
-
-  if (text.includes("soon") || text.includes("important")) {
+  if (text.includes("important") || text.includes("soon"))
     return "Medium";
-  }
-
   return "Low";
 };
 
 function TaskList() {
   const [tasks, setTasks] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  // Edit states
   const [editTask, setEditTask] = useState(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editAssignedTo, setEditAssignedTo] = useState("");
+  const [deleteId, setDeleteId] = useState(null);
 
-  // Delete modal
-  const [deleteTaskId, setDeleteTaskId] = useState(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [deadline, setDeadline] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  /* ===== LOAD TASKS (FROM BACKEND) ===== */
   useEffect(() => {
-    fetchTasks();
+    const stored = JSON.parse(localStorage.getItem("tasks")) || [];
+    setTasks(stored);
   }, []);
 
-  const fetchTasks = async () => {
-    try {
-      const res = await api.get("/tasks");
-      setTasks(res.data);
-    } catch (error) {
-      console.error("Error fetching tasks", error);
-    }
+  /* ===== STATUS UPDATE ===== */
+  const updateStatus = (id, status) => {
+    const updated = tasks.map((t) =>
+      t.id === id ? { ...t, status } : t
+    );
+    setTasks(updated);
+    localStorage.setItem("tasks", JSON.stringify(updated));
   };
 
-  /* ===== UPDATE STATUS (BACKEND) ===== */
-  const updateStatus = async (id, newStatus) => {
-    try {
-      await api.put(`/tasks/${id}`, { status: newStatus });
-      fetchTasks();
-    } catch (error) {
-      console.error("Status update failed", error);
-    }
-  };
-
-  /* ===== EDIT FLOW ===== */
-  const openEditModal = (task) => {
+  /* ===== OPEN EDIT ===== */
+  const openEdit = (task) => {
     setEditTask(task);
-    setEditTitle(task.title);
-    setEditDescription(task.description);
-    setEditAssignedTo(task.assignedTo || "");
+    setTitle(task.title);
+    setDescription(task.description);
+    setAssignedTo(task.assignedTo);
+    setDeadline(task.deadline || "");
   };
 
-  const saveEditTask = async () => {
-    try {
-      await api.put(`/tasks/${editTask._id}`, {
-        title: editTitle,
-        description: editDescription,
-        assignedTo: editAssignedTo,
-      });
-      setEditTask(null);
-      fetchTasks();
-    } catch (error) {
-      console.error("Edit failed", error);
-    }
+  /* ===== SAVE EDIT ===== */
+  const saveEdit = () => {
+    const updated = tasks.map((t) =>
+      t.id === editTask.id
+        ? { ...t, title, description, assignedTo, deadline }
+        : t
+    );
+
+    setTasks(updated);
+    localStorage.setItem("tasks", JSON.stringify(updated));
+    setEditTask(null);
   };
 
-  /* ===== DELETE FLOW ===== */
-  const confirmDelete = async () => {
-    try {
-      await api.delete(`/tasks/${deleteTaskId}`);
-      setDeleteTaskId(null);
-      fetchTasks();
-    } catch (error) {
-      console.error("Delete failed", error);
-    }
+  /* ===== DELETE ===== */
+  const confirmDelete = () => {
+    const updated = tasks.filter((t) => t.id !== deleteId);
+    setTasks(updated);
+    localStorage.setItem("tasks", JSON.stringify(updated));
+    setDeleteId(null);
   };
-
-  /* ===== SEARCH + FILTER + ROLE ===== */
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-    const matchesStatus = statusFilter
-      ? task.status === statusFilter
-      : true;
-
-    const roleCheck =
-      user.role === "manager" || task.assignedTo === user.email;
-
-    return matchesSearch && matchesStatus && roleCheck;
-  });
-
-  /* ===== PRIORITY SORTING ===== */
-  const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    const pa = getPriority(a.description);
-    const pb = getPriority(b.description);
-    return priorityOrder[pa] - priorityOrder[pb];
-  });
 
   return (
     <Layout>
-      <h2 style={{ marginBottom: "16px" }}>Tasks</h2>
+      <h2>Tasks</h2>
 
-      {/* SEARCH + FILTER */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-        <input
-          type="text"
-          placeholder="Search task..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {tasks.map((task) => {
+        const priority = getPriority(task.description);
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="Pending">Pending</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
+        return (
+          <div className="task-card" key={task.id}>
+            <div>
+              <h4>{task.title}</h4>
+              <p>{task.description}</p>
 
-      {/* TASK LIST */}
-      {sortedTasks.length === 0 ? (
-        <p>No tasks found</p>
-      ) : (
-        sortedTasks.map((task) => {
-          const priority = getPriority(task.description);
+              {priority === "High" && (
+                <span className="priority high">🔥 High Priority</span>
+              )}
+              {priority === "Medium" && (
+                <span className="priority medium">⚠️ Medium Priority</span>
+              )}
 
-          return (
-            <div key={task._id} className="task-row">
-              <div>
-                <h4>{task.title}</h4>
-                <small>{task.description}</small>
-
-                {task.summary && (
-                  <p style={{ fontSize: "13px", marginTop: "6px" }}>
-                    🤖 <b>AI Summary:</b> {task.summary}
-                  </p>
-                )}
-
-                <div style={{ marginTop: "6px" }}>
-                  <span className={`priority ${priority.toLowerCase()}`}>
-                    {priority} Priority
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "10px" }}>
-                <span className={`status ${task.status?.toLowerCase()}`}>
-                  {task.status || "Pending"}
-                </span>
-
-                {user.role === "manager" && (
-                  <>
-                    <select
-                      value={task.status || "Pending"}
-                      onChange={(e) =>
-                        updateStatus(task._id, e.target.value)
-                      }
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-
-                    <button onClick={() => openEditModal(task)}>✏️</button>
-                    <button onClick={() => setDeleteTaskId(task._id)}>🗑️</button>
-                  </>
-                )}
-              </div>
+              {task.deadline && (
+                <p className="deadline">📅 Deadline: {task.deadline}</p>
+              )}
             </div>
-          );
-        })
-      )}
 
-      {/* EDIT MODAL */}
+            <div className="task-actions">
+              <span className={`status ${task.status.toLowerCase()}`}>
+                {task.status}
+              </span>
+
+              <select
+                value={task.status}
+                onChange={(e) => updateStatus(task.id, e.target.value)}
+              >
+                <option>Pending</option>
+                <option>Completed</option>
+              </select>
+
+              <button onClick={() => openEdit(task)}>✏️</button>
+              <button onClick={() => setDeleteId(task.id)}>🗑️</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* ===== EDIT MODAL ===== */}
       {editTask && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>Edit Task</h3>
 
-            <input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-            />
-
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
             <textarea
-              rows="3"
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
-
             <input
-              value={editAssignedTo}
-              onChange={(e) => setEditAssignedTo(e.target.value)}
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              placeholder="Assign email"
+            />
+            <input
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
             />
 
             <div className="modal-actions">
-              <button onClick={saveEditTask}>Save</button>
-              <button onClick={() => setEditTask(null)}>Cancel</button>
+              <button onClick={saveEdit}>Save</button>
+              <button className="cancel" onClick={() => setEditTask(null)}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* DELETE MODAL */}
-      {deleteTaskId && (
+      {/* ===== DELETE MODAL ===== */}
+      {deleteId && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>Delete Task</h3>
             <p>Are you sure?</p>
 
             <div className="modal-actions">
-              <button onClick={confirmDelete}>Delete</button>
-              <button onClick={() => setDeleteTaskId(null)}>Cancel</button>
+              <button className="danger" onClick={confirmDelete}>
+                Delete
+              </button>
+              <button className="cancel" onClick={() => setDeleteId(null)}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>

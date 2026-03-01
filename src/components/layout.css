@@ -379,3 +379,232 @@ form button {
   background: #dcfce7;
   color: #166534;
 }
+/* ===== MODAL OVERLAY ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* ===== MODAL BOX ===== */
+.modal {
+  background: #ffffff;
+  width: 420px;
+  max-width: 90%;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: pop 0.25s ease;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal h3 {
+  margin-bottom: 14px;
+}
+
+/* ===== INPUTS ===== */
+.modal input,
+.modal textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  outline: none;
+}
+
+.modal textarea {
+  resize: none;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.modal-actions button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-actions .cancel {
+  background: #e5e7eb;
+}
+
+.modal-actions .danger {
+  background: #dc2626;
+  color: white;
+}
+.task-card {
+  background: #fff;
+  padding: 18px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status.pending {
+  background: #fde68a;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.status.completed {
+  background: #bbf7d0;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.priority.high {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.priority.medium {
+  color: #ca8a04;
+}
+
+.deadline {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal {
+  background: white;
+  padding: 22px;
+  width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+.modal input,
+.modal textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions .danger {
+  background: #dc2626;
+  color: white;
+}
+
+.modal-actions .cancel {
+  background: #e5e7eb;
+}
+/* ===== Create Task Premium UI ===== */
+
+.create-task-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.create-task-card {
+  width: 420px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 26px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.create-task-card h3 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.create-task-card label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.create-task-card input,
+.create-task-card textarea,
+.create-task-card select {
+  width: 100%;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.create-task-card textarea {
+  resize: none;
+}
+
+.task-row {
+  display: flex;
+  gap: 10px;
+}
+
+.task-row select,
+.task-row input {
+  flex: 1;
+}
+
+.create-task-card button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.create-task-card button:hover {
+  background: #1d4ed8;
+}

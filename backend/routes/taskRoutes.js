@@ -1,15 +1,18 @@
 const express = require("express");
-const {
-  getTasks,
-  createTask,
-} = require("../controllers/taskController");
+const Task = require("../models/Task");
 
 const router = express.Router();
 
-// GET
-router.get("/", getTasks);
+// create task
+router.post("/create", async (req, res) => {
+  const task = await Task.create(req.body);
+  res.json(task);
+});
 
-// POST ✅ (ADD THIS)
-router.post("/", createTask);
+// get all tasks
+router.get("/", async (req, res) => {
+  const tasks = await Task.find();
+  res.json(tasks);
+});
 
 module.exports = router;
