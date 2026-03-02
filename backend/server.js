@@ -8,6 +8,7 @@ const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 
+// middleware
 app.use(cors());
 app.use(express.json());
 
@@ -15,12 +16,14 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
-// db
+// database
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+  .catch((err) => console.error("MongoDB error:", err));
 
-app.listen(5000, () => {
-  console.log("Backend running on http://localhost:5000");
+// server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Backend running on http://localhost:${PORT}`);
 });

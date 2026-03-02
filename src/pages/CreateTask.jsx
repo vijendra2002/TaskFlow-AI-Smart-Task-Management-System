@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function CreateTask() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ function CreateTask() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title || !assignedTo) {
@@ -21,21 +22,23 @@ function CreateTask() {
       return;
     }
 
-    const newTask = {
-      id: Date.now(),
-      title,
-      description,
-      assignedTo,
-      priority,
-      deadline,
-      status: "Pending",
-      createdBy: user.email,
-    };
+    try {
+      // 🔥 REAL TASK CREATE (Backend → MongoDB)
+      await axios.post("http://localhost:5000/api/tasks/create", {
+        title,
+        description,
+        assignedTo,
+        priority,
+        deadline,
+        status: "Pending",
+        userId: user?.id || user?._id
+      });
 
-    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    localStorage.setItem("tasks", JSON.stringify([...tasks, newTask]));
-
-    navigate("/tasks");
+      navigate("/tasks");
+    } catch (err) {
+      alert("Task creation failed");
+      console.error(err);
+    }
   };
 
   return (

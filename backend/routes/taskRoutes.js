@@ -3,16 +3,35 @@ const Task = require("../models/Task");
 
 const router = express.Router();
 
-// create task
+// ================== CREATE TASK ==================
 router.post("/create", async (req, res) => {
-  const task = await Task.create(req.body);
-  res.json(task);
+  try {
+    const { title, description, userId } = req.body;
+
+    // 🔥 TASK CREATE (yahin se data MongoDB Compass me jata hai)
+    const task = await Task.create({
+      title,
+      description,
+      userId
+    });
+
+    res.status(201).json({
+      message: "Task created successfully",
+      task
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// get all tasks
+// ================== GET ALL TASKS ==================
 router.get("/", async (req, res) => {
-  const tasks = await Task.find();
-  res.json(tasks);
+  try {
+    const tasks = await Task.find();
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

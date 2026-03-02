@@ -4,43 +4,73 @@ const User = require("../models/User");
 
 const router = express.Router();
 
-// SIGNUP (only user)
+// ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
+  try {
+    const { name, email, password, role } = req.body;
 
-  const exists = await User.findOne({ email });
-  if (exists) return res.status(400).json({ message: "User exists" });
+    // check user exists
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "User exists" });
+    }
 
-  const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
-  await User.create({
-    name,
-    email,
-    password: hash,
-    role: "user"
-  });
+    // CREATE USER
+    const user = await User.create({
+      name,
+      email,
+      password: hash,
+      role   // 👈 frontend se aaya role save karo
+    });
 
-  res.json({ message: "Signup successful" });
+    // 🔥 MOST IMPORTANT RESPONSE
+    res.status(201).json({
+      message: "Signup successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// LOGIN (admin + user)
+// ================== LOGIN ==================
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ message: "Invalid credentials" });
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(400).json({ message: "Invalid credentials" });
-
-  res.json({
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
+    // 1️⃣ find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
-  });
+
+    // 2️⃣ compare password
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // 3️⃣ success response
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

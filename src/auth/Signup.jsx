@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 import "../styles/auth.css";
 import signupImg from "../assets/Signup.svg.webp";
 
 function Signup() {
   const navigate = useNavigate();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     if (!name || !email || !password || !role) {
@@ -19,15 +19,24 @@ function Signup() {
       return;
     }
 
-    // TEMP signup logic
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ name, email, role })
-    );
+    try {
+      // 🔥 REAL SIGNUP (Backend + MongoDB)
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/signup",
+        { name, email, password, role }
+      );
 
-    role === "manager"
-      ? navigate("/manager")
-      : navigate("/employee");
+      // ✅ Save logged-in user (for auth / logout)
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      // 🔁 Redirect by role
+      role === "manager"
+        ? navigate("/manager")
+        : navigate("/employee");
+
+    } catch (err) {
+      alert(err.response?.data?.message || "Signup failed");
+    }
   };
 
   return (
@@ -37,9 +46,9 @@ function Signup() {
         {/* LEFT IMAGE */}
         <div className="auth-left">
           <img
-           src={signupImg}
-           alt="Signup Illustration"
-           style={{ width: "260px", marginBottom: "20px" }}
+            src={signupImg}
+            alt="Signup Illustration"
+            style={{ width: "260px", marginBottom: "20px" }}
           />
           <h3>Join Smart Task Manager</h3>
           <p>Create your account and start managing tasks</p>
